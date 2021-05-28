@@ -44,3 +44,4 @@ secrets.tar
 .pytest_cache
 src
 
+root_key
