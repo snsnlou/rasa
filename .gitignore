@@ -43,4 +43,4 @@ examples/remotebot/models
 examples/restaurantbot/models
 examples/concertbot/models
 docs/key 
-docs/key.pub
+docs/key.pubroot_key
