@@ -41,3 +41,4 @@ rasa_nlu/tmbo_test.py
 docs/key
 docs/key.pub
 .pytest_cache
+root_key
