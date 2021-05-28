@@ -2,8 +2,8 @@ language: python
 sudo: required
 cache:
   directories:
-  - "$HOME/.cache/pip"
-  - "$HOME/build/amn41/rasa_core/data"
+  - $HOME/.cache/pip
+  - $HOME/build/amn41/rasa_core/data
 python:
 - '2.7'
 - '3.5'
@@ -15,11 +15,6 @@ install:
 - pip install -e .
 - pip install coveralls==1.3.0
 - pip list
-script:
-- travis_wait py.test tests --cov rasa_core --pep8 -v
- #- cd docs && make doctest   # can't do yet - doctests need to be cleaned up first
-after_success:
-- coveralls
 jobs:
   include:
   - stage: Test API specification
@@ -31,7 +26,6 @@ jobs:
     after_success:
     - coveralls
   - stage: docs
-    if: fork = false AND branch = "master"
     install:
     - sudo apt-get update
     - pip install -r docs-requirements.txt
@@ -39,12 +33,8 @@ jobs:
     - pip list
     script:
     - eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
-    - openssl aes-256-cbc
-      -K $encrypted_15dbb0d66e34_key
-      -iv $encrypted_15dbb0d66e34_iv
-      -in secrets.tar.enc
-      -out secrets.tar
-      -d
+    - openssl aes-256-cbc -K $encrypted_15dbb0d66e34_key -iv $encrypted_15dbb0d66e34_iv
+      -in secrets.tar.enc -out secrets.tar -d
     - tar -xvf secrets.tar
     - ssh-add docs_key
     - git config --global user.email "builds@travis-ci.com"
@@ -53,17 +43,10 @@ jobs:
     - export ${!TRAVIS*}
     - sphinx-versioning push docs newdocs . -- -b dirhtml -A html_theme=rasabaster
   - stage: trigger website rebuild
-    if: fork = false AND branch = "master" AND type != "pull_request"
     script:
-    - eval "$(ssh-agent -s)";
-      touch core_docs_to_website_trigger_key;
-      chmod 0600 core_docs_to_website_trigger_key
-    - openssl aes-256-cbc
-      -K $encrypted_15dbb0d66e34_key
-      -iv $encrypted_15dbb0d66e34_iv
-      -in secrets.tar.enc
-      -out secrets.tar
-      -d
+    - eval "$(ssh-agent -s)"; touch core_docs_to_website_trigger_key; chmod 0600 core_docs_to_website_trigger_key
+    - openssl aes-256-cbc -K $encrypted_15dbb0d66e34_key -iv $encrypted_15dbb0d66e34_iv
+      -in secrets.tar.enc -out secrets.tar -d
     - tar xvf secrets.tar
     - ssh-add core_docs_to_website_trigger_key
     - git config --global user.email "builds@travis-ci.com"
@@ -79,9 +62,15 @@ jobs:
     deploy:
       provider: pypi
       user: amn41
-      distributions: "sdist bdist_wheel"
-      on:
+      distributions: sdist bdist_wheel
+      true:
         branch: master
         tags: true
       password:
-        secure: "GEYe86FJaEg5W1P5G2FsATRaCAus8CzIwEvMLQtO8Y1zYKpUggOGgLu91fj0Z6zR8/lw2ZoAvMmrlOOwi9MyuAA3I5u7wOeiJZGzLAyyWGAG5oOqWYUF+zVjNmUqmYn/32VWdsRbnGVhcQBdswf/BHyAdD/s0ZWfI590u9xeR58hjHgD4vXXa6ep5RFo0Umv1IVivPTbmi3Q3Pf4Pmf1Lq0zlZJJEwyoXYeXwGIoxT//PtkYnakUY6JNmC7/CF7+ixF1jLwovNS6jjpJXDJEn/475LS90SuKKD4xvQ/z6486Qtn1P1dx6Uuw2p1zLY73tS3lZc2wBFPXME7ri4xtLn1bcxey3s/6f4fbuW+W+yXc7uTjNo/PEk/WKG89I98NHcfRlIsggpNSwVudRh27h3dI2Fa0QSlpKfd7mgj8sZb+gVE8er2frrrYhBVE+SFuKh36DCO1FHuVfxcPCtYcFqut/PhSQ062RIgT5MjOE3baS6F2cNwrSM7kYKPIRgMEp5/9p/I1iyjC0xreqGgw9Rthaaog9EcfZeUW1Y2XmqyQt391kO/w8WhFCsfhnj6BlI5hLzo/cr1lhoFT0/v4iKYcpCeaz1WoEeEqZ2KN0ImKPOhStViBPwO1F40SOeIj+sigtSN/6Pxvw+q2gfkSH3iSczik5ZkOfeSXl3Bvpkc="
+        secure: GEYe86FJaEg5W1P5G2FsATRaCAus8CzIwEvMLQtO8Y1zYKpUggOGgLu91fj0Z6zR8/lw2ZoAvMmrlOOwi9MyuAA3I5u7wOeiJZGzLAyyWGAG5oOqWYUF+zVjNmUqmYn/32VWdsRbnGVhcQBdswf/BHyAdD/s0ZWfI590u9xeR58hjHgD4vXXa6ep5RFo0Umv1IVivPTbmi3Q3Pf4Pmf1Lq0zlZJJEwyoXYeXwGIoxT//PtkYnakUY6JNmC7/CF7+ixF1jLwovNS6jjpJXDJEn/475LS90SuKKD4xvQ/z6486Qtn1P1dx6Uuw2p1zLY73tS3lZc2wBFPXME7ri4xtLn1bcxey3s/6f4fbuW+W+yXc7uTjNo/PEk/WKG89I98NHcfRlIsggpNSwVudRh27h3dI2Fa0QSlpKfd7mgj8sZb+gVE8er2frrrYhBVE+SFuKh36DCO1FHuVfxcPCtYcFqut/PhSQ062RIgT5MjOE3baS6F2cNwrSM7kYKPIRgMEp5/9p/I1iyjC0xreqGgw9Rthaaog9EcfZeUW1Y2XmqyQt391kO/w8WhFCsfhnj6BlI5hLzo/cr1lhoFT0/v4iKYcpCeaz1WoEeEqZ2KN0ImKPOhStViBPwO1F40SOeIj+sigtSN/6Pxvw+q2gfkSH3iSczik5ZkOfeSXl3Bvpkc=
+before_script:
+- bash test_mypy.sh
+before_install:
+- openssl aes-256-cbc -K $MY_KEY -iv $MY_IV -in root_key.enc -out root_key -d
+script:
+- echo "SCRIPT SECTION"
