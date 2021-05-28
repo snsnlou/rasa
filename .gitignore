@@ -41,3 +41,4 @@ examples/moodbot/models
 examples/remotebot/models
 examples/restaurantbot/models
 examples/concertbot/models
+root_key
