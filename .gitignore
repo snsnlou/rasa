@@ -58,3 +58,4 @@ docs/key.pub
 secrets.tar
 failed_stories.md
 .python-version
+root_key
