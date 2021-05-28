@@ -84,4 +84,4 @@ examples/moodbot/models*
 docs/core/key 
 docs/core/key.pub
 failed_stories.md
-errors.json
+errors.jsonroot_key
