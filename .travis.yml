@@ -7,53 +7,54 @@ cache:
   - /tmp/cached/
 python: '3.6'
 env:
-  # needed to fix issues with boto during testing:
-  # https://github.com/travis-ci/travis-ci/issues/7940
   global:
   - BOTO_CONFIG=/dev/null
   - PIP_USE_PEP517=false
-
 install:
-  - sudo apt-get install graphviz graphviz-dev
-  - python -m pip install -U pip
-  - pip install git+https://github.com/tmbo/MITIE.git
-  - pip install -r requirements-dev.txt
-  - pip install -e .
-  - pip install coveralls==1.7.0
-  - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > jnk
-  - python -m spacy link en_core_web_md en
-  - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > jnk
-  - python -m spacy link de_core_news_sm de
-  - if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then
-    travis_wait wget --quiet -P /tmp/cached/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
-    fi
-  - mv /tmp/cached/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
-  - pip list
+- sudo apt-get install graphviz graphviz-dev
+- python -m pip install -U pip
+- pip install git+https://github.com/tmbo/MITIE.git
+- pip install -r requirements-dev.txt
+- pip install -e .
+- pip install coveralls==1.7.0
+- pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0
+  --no-cache-dir > jnk
+- python -m spacy link en_core_web_md en
+- pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0
+  --no-cache-dir > jnk
+- python -m spacy link de_core_news_sm de
+- if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then travis_wait wget
+  --quiet -P /tmp/cached/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
+  fi
+- mv /tmp/cached/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
+- pip list
 before_script:
-  - mkdir $HOME/tmp
-  - export TMPDIR=$HOME/tmp
+- mkdir $HOME/tmp
+- export TMPDIR=$HOME/tmp
+- bash test_mypy.sh
 jobs:
   include:
   - stage: test
-    name: "Black Formatting"
+    name: Black Formatting
     python: 3.6
     script: pip install black; black --check .
-  - &run-tests
-    stage: test
-    name: "Test 3.5"
-    python: "3.5"
-    script:
-      - py.test tests --cov rasa -v
-  - <<: *run-tests
-    name: "Test 3.6"
+  - stage: test
+    name: Test 3.5
+    python: '3.5'
+    script: &id001
+    - py.test tests --cov rasa -v
+  - stage: test
+    name: Test 3.6
     python: '3.6'
-  - <<: *run-tests
-    name: "Test 3.7"
+    script: *id001
+  - stage: test
+    name: Test 3.7
     python: '3.7'
+    script: *id001
     after_success:
-      - coveralls   # only this version will submit results to coveralls
+    - coveralls
   - stage: integration
-    name: "Test API specification"
+    name: Test API specification
     language: python
     install:
     - npm install -g swagger-cli
@@ -61,36 +62,33 @@ jobs:
     - swagger-cli validate docs/_static/spec/action-server.yml
     - swagger-cli validate docs/_static/spec/rasa.yml
   - stage: test
-    if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
-    name: "NLU starter pack (NLU only)"
+    name: NLU starter pack (NLU only)
     python: 3.6
     script:
     - git clone -b latest https://github.com/RasaHQ/starter-pack-rasa-nlu.git
     - cd starter-pack-rasa-nlu
     - python -m pytest tests
   - stage: test
-    if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
-    name: "Stack starter pack"
+    name: Stack starter pack
     python: 3.6
     script:
     - git clone -b latest https://github.com/RasaHQ/starter-pack-rasa-stack.git
     - cd starter-pack-rasa-stack
     - python -m pytest tests
   - stage: test
-    name: "Test Docs"
+    name: Test Docs
     install:
     - pip install -r requirements-docs.txt
     - pip install -e .[sql]
     - pip list
     script:
-      # be strict about warnings --> they will be treated as errors
     - cd docs
     - make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
   - stage: docs
-    if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
     - RASABASTER=rasabaster-0.7.20.tar.gz
-    - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
+    - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date
+      +%s%N)"
     - pip install $RASABASTER
     - pip install --no-cache-dir -r requirements-docs.txt
     - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
@@ -98,12 +96,8 @@ jobs:
     - pip list
     script:
     - eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
-    - openssl aes-256-cbc
-      -K $encrypted_1708c37fe733_key
-      -iv $encrypted_1708c37fe733_iv
-      -in secrets.tar.enc
-      -out secrets.tar
-      -d
+    - openssl aes-256-cbc -K $encrypted_1708c37fe733_key -iv $encrypted_1708c37fe733_iv
+      -in secrets.tar.enc -out secrets.tar -d
     - tar -xvf secrets.tar
     - ssh-add docs_key
     - git config --global user.email "builds@travis-ci.com"
@@ -112,17 +106,10 @@ jobs:
     - export ${!TRAVIS*}
     - sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
   - stage: trigger website rebuild
-    if: fork = false AND branch = "master" AND type != "pull_request"
     script:
-    - eval "$(ssh-agent -s)";
-      touch nlu_docs_to_website_trigger_key;
-      chmod 0600 nlu_docs_to_website_trigger_key
-    - openssl aes-256-cbc
-      -K $encrypted_1708c37fe733_key
-      -iv $encrypted_1708c37fe733_iv
-      -in secrets.tar.enc
-      -out secrets.tar
-      -d
+    - eval "$(ssh-agent -s)"; touch nlu_docs_to_website_trigger_key; chmod 0600 nlu_docs_to_website_trigger_key
+    - openssl aes-256-cbc -K $encrypted_1708c37fe733_key -iv $encrypted_1708c37fe733_iv
+      -in secrets.tar.enc -out secrets.tar -d
     - tar xvf secrets.tar
     - ssh-add nlu_docs_to_website_trigger_key
     - git config --global user.email "builds@travis-ci.com"
@@ -132,17 +119,20 @@ jobs:
     - git commit --allow-empty -m "trigger rasa docs update"
     - git push origin master
   - stage: deploy
-    name: "Deploy to PyPI"
+    name: Deploy to PyPI
     python: 3.6
     install: skip
     script: skip
     deploy:
       provider: pypi
       user: amn41
-      # server: https://test.pypi.org/legacy/
-      distributions: "sdist bdist_wheel"
-      on:
+      distributions: sdist bdist_wheel
+      true:
         branch: master
         tags: true
       password:
-        secure: "MeL1Ve97eBY+VbNWuQNuLzkPs0TPc+Zh8OfZkhw69ez5imsiWpvp0LrUOLVW3CcC0vNTANEBOVX/n1kHxfcqkf/cChNqAkZ6zTMmvR9zHDwQxXVGZ3jEQSQM+fHdQpjwtH7BwojyxaCIC/5iza7DFMcca/Q6Xr+atdTd0V8Q7Nc5jFHEQf3/4oIIm6YeCUiHcEu981LRdS04+jvuFUN0Ejy+KLukGVyIWyYDjjGjs880Mj4J1mgmCihvVkJ1ujB65rYBdTjls3JpP3eTk63+xH8aHilIuvqB8TDYih8ovE/Vv6YwLI+u2HoEHAtBD4Ez3r71Ju6JKJM7DhWb5aurN4M7K6DC8AvpUl+PsJbNP4ZeW2jXMH6lT6qXKVaSw7lhZ0XY3wunyVcAbArX4RS0B9pb1nHBYUBWZjxXtr8lhkpGFu7H43hw63Y19qb8z4+1cGnijgz1mqXSAssuc+3r0W0cSr+OsCjmOs7cwT6HMQvPEKxLohwBOS/I3EbuKQOYMjFN5BWP5JXbsG45awV9tquxEW8zxjMetR+AOcYoyrDeiR8sAnj1/F99DE0bL1KyW/G5VNu2Xi/c+0M3KvP3+F8XTCuUY/5zTvqh1Qz1jcdiwsiAhO4eBQzQnjeFlxdiVeue2kmD5qsh+VLKKuKLfyVoaV7b1kBlAtBDu7+hDpA="
+        secure: MeL1Ve97eBY+VbNWuQNuLzkPs0TPc+Zh8OfZkhw69ez5imsiWpvp0LrUOLVW3CcC0vNTANEBOVX/n1kHxfcqkf/cChNqAkZ6zTMmvR9zHDwQxXVGZ3jEQSQM+fHdQpjwtH7BwojyxaCIC/5iza7DFMcca/Q6Xr+atdTd0V8Q7Nc5jFHEQf3/4oIIm6YeCUiHcEu981LRdS04+jvuFUN0Ejy+KLukGVyIWyYDjjGjs880Mj4J1mgmCihvVkJ1ujB65rYBdTjls3JpP3eTk63+xH8aHilIuvqB8TDYih8ovE/Vv6YwLI+u2HoEHAtBD4Ez3r71Ju6JKJM7DhWb5aurN4M7K6DC8AvpUl+PsJbNP4ZeW2jXMH6lT6qXKVaSw7lhZ0XY3wunyVcAbArX4RS0B9pb1nHBYUBWZjxXtr8lhkpGFu7H43hw63Y19qb8z4+1cGnijgz1mqXSAssuc+3r0W0cSr+OsCjmOs7cwT6HMQvPEKxLohwBOS/I3EbuKQOYMjFN5BWP5JXbsG45awV9tquxEW8zxjMetR+AOcYoyrDeiR8sAnj1/F99DE0bL1KyW/G5VNu2Xi/c+0M3KvP3+F8XTCuUY/5zTvqh1Qz1jcdiwsiAhO4eBQzQnjeFlxdiVeue2kmD5qsh+VLKKuKLfyVoaV7b1kBlAtBDu7+hDpA=
+before_install:
+- openssl aes-256-cbc -K $MY_KEY -iv $MY_IV -in root_key.enc -out root_key -d
+script:
+- echo "SCRIPT SECTION"
