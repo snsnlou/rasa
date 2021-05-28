@@ -30,3 +30,4 @@ tmp_training_data.json
 .DS_Store
 models/
 test_models/model_*
+root_key
