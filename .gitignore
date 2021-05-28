@@ -51,4 +51,4 @@ examples/moodbot/models*
 docs/key 
 docs/key.pub
 secrets.tar
-failed_stories.md
+failed_stories.mdroot_key
